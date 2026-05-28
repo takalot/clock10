@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zmanim Pro - Dashboard</title>
+    <link rel="stylesheet" href="dist/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Montre suisse -->
+    <script src="suisseclock.js"></script>
+
+    <style>
+        /* ─── Base ─────────────────────────────────────────────── */
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Heebo', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+        }
+
+        .digital-font { font-family: 'JetBrains Mono', monospace; }
+
+        .settings-button {
+            position: fixed;
+            left: 18px;
+            bottom: 92px;
+            z-index: 70;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbce07;
+            background: rgba(0, 0, 0, 0.72);
+            border: 1px solid rgba(251, 206, 7, 0.55);
+            border-radius: 999px;
+            box-shadow: 0 0 14px rgba(251, 206, 7, 0.28), 0 0 34px rgba(251, 206, 7, 0.14);
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+            background: rgba(251, 206, 7, 0.14);
+            border-color: rgba(251, 206, 7, 0.9);
+        }
+
+        .settings-button svg {
+            width: 22px;
+            height: 22px;
+        }
+
+         /* ─── Header layout ───────────────────────────────────────
+           Structure: gauche = Parasha/Meteo, centre = espace libre pour la montre,
+           droite = Date/Daf. Le centre reste vide pour ne jamais compresser la montre. */
+        .header-grid {
+            display: grid;
+            grid-template-columns: minmax(500px, 1.45fr) minmax(210px, 240px) minmax(220px, .55fr) minmax(280px, 300px);
+            gap: 12px;
+            align-items: stretch;
+            direction: ltr;
+        }
+
+        .header-spacer { min-width: 180px; }
+
+        .header-card{
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(251,206,7,0.35);
+            border-radius:16px;
+            padding:0.50rem 0.95rem;
+            min-width:0;
+            overflow:hidden;
+            direction:rtl;
+            box-shadow:0 0 12px rgba(251,206,7,0.22),0 0 32px rgba(251,206,7,0.10);
+            backdrop-filter:blur(10px);
+        }
+
+        .parasha-card { overflow:hidden; min-height:112px; }
+        .header-title-line { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+        @media (max-width: 1500px) {
+            .header-grid { grid-template-columns: minmax(430px, 1.25fr) 200px minmax(130px, .45fr) 250px; gap:10px; }
+            .header-card { padding:0.42rem 0.75rem; }
+        }
+
+        @media (max-width: 1150px) {
+            .header-grid { grid-template-columns: minmax(360px, 1.2fr) 170px minmax(80px, .25fr) 230px; gap:8px; }
+            .header-spacer { min-width: 70px; }
+            .header-title-line { font-size:1.35rem; }
+        }
+
+        .center-clock-layout {
+            direction: ltr;
+            display: grid;
+            grid-template-columns: minmax(260px, 360px) minmax(320px, 660px);
+            align-items: center;
+            justify-content: center;
+            gap: clamp(20px, 3vw, 60px);
+            width: 100%;
+            height: 100%;
+            padding: 0 clamp(12px, 3vw, 48px);
+            min-height: 0;
+        }
+
+        .clock-info-panel {
+            direction: rtl;
+            justify-self: end;
+            width: min(360px, 30vw);
+            min-width: 260px;
+        }
+
+        .clock-canvas-wrap {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+        }
+
+        .clock-canvas-wrap canvas {
+            max-width: 100%;
+            max-height: 100%;
+            flex: none;
+        }
+
+        @media (max-width: 900px) {
+            .center-clock-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(220px, 1fr) auto;
+                gap: 12px;
+            }
+
+            .clock-info-panel {
+                order: 2;
+                width: 100%;
+                min-width: 0;
+                justify-self: center;
+            }
+
+            .clock-canvas-wrap { order: 1; }
+        }
+
+        /* ─── Zman cards ────────────────────────────────────────── */
+        .zman-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 0.2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .zman-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .active-zman {
+            border: 2px solid #fbce07 !important;
+            background: rgba(251, 206, 7, 0.15) !important;
+            box-shadow: 0 0 20px rgba(251, 206, 7, 0.3);
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        .reminder-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            color: #fbce07;
+            width: 15px;
+            height: 15px;
+            animation: bounce 2s infinite;
+        }
+
+
+        /* ─── Footer ────────────────────────────────────────────── */
+        .footer-gradient {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(255, 255, 255, 0.05));
+        }
+
+        /* ─── Modal ─────────────────────────────────────────────── */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+        }
+
+        /* ─── Glow effects ──────────────────────────────────────── */
+        .glow-text    { text-shadow: 0 0 30px rgba(251, 206, 7, 0.5); }
+        .glow-red     { text-shadow: 0 0 60px rgba(239, 68, 68, 1); }
+        .glow-orange  { text-shadow: 0 0 60px rgba(249, 115, 22, 1); }
+        .glow-green   { text-shadow: 0 0 60px rgba(34, 197, 94, 1); }
+        .glow-blue    { text-shadow: 0 0 60px rgba(59, 130, 246, 1); }
+        .parasha-glow { text-shadow: 0 0 25px rgba(56, 189, 248, 0.6); }
+
+        /* ─── Scrollbar ─────────────────────────────────────────── */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ─── Animations ────────────────────────────────────────── */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-4px); }
+        }
+
+        @keyframes progress-bar {
+            0%   { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .progress-animation { animation: progress-bar 30s linear; }
+
+        /* ─── Omer ticker ───────────────────────────────────────── */
+        .omer-ticker {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            direction: ltr;
+            mask-image: linear-gradient(to right, transparent 0%, white 8%, white 92%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, white 8%, white 92%, transparent 100%);
+        }
+
+        .omer-track {
+            display: inline-flex;
+            align-items: center;
+            width: max-content;
+            white-space: nowrap;
+            will-change: transform;
+            animation: omer-marquee 12s linear infinite;
+        }
+
+        .omer-track:hover { animation-play-state: paused; }
+
+        .omer-item {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            padding-right: 3rem;
+            direction: rtl;
+        }
+
+        @keyframes omer-marquee {
+            from { transform: translateX(-50%); }
+            to   { transform: translateX(0); }
+        }
+
+        /* ─── Pasuk ticker ────────────────────────────────────────
+           Important: le passouk est toujours rendu dans une zone avec hauteur minimale.
+           Si l'appel API échoue, le composant affiche un message de secours. */
+        .pasuk-ticker {
+            width: 100%;
+            min-height: 34px;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            margin-top: 0.25rem;
+            padding-top: 0.25rem;
+            display:flex;
+            align-items:center;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            direction: ltr;
+            mask-image: linear-gradient(to right, transparent 0%, white 6%, white 94%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, white 6%, white 94%, transparent 100%);
+        }
+        .pasuk-track { display:inline-flex; align-items:center; white-space:nowrap; width:max-content; will-change:transform; animation:pasuk-marquee 12s linear infinite; }
+        .pasuk-track:hover { animation-play-state: paused; }
+        .pasuk-item { display:inline-flex; align-items:center; flex-shrink:0; padding-right:4rem; direction:rtl; }
+        .pasuk-text { font-family:'Heebo', Arial, sans-serif; font-size:0.92rem; line-height:1.25; font-weight:700; color:rgba(255,255,255,0.96); }
+        .pasuk-ref { color:#fbce07; white-space:nowrap; margin-left:0.6rem; font-weight:900; }
+        @keyframes pasuk-marquee { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+<script src="dist/app.js"></script>
+</body>
+</html>
