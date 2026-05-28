@@ -710,7 +710,7 @@ function App() {
             </header>
 
             {/* ── MAIN : grande montre analogique ── */}
-			<main className="flex-grow flex items-center justify-center relative min-h-0 overflow-hidden z-10">
+			<main className="flex-grow flex items-stretch justify-center relative min-h-0 overflow-hidden z-10">
 				<CenterClock curTime={curTime} nextZman={nextZman} countdownData={countdownData} />
 			</main>
 

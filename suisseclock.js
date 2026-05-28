@@ -283,7 +283,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
         }
     }
 
-    const clock = new Clock(canvas, ctx, SIZE * 0.475);
+    const clock = new Clock(canvas, ctx, SIZE * 0.495);
 
     let frameId = null;
 
