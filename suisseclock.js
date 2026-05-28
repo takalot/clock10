@@ -34,7 +34,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
     ctx.scale(DPR, DPR);
 
     const SECOND_SWEEP_SECONDS = 58.50;
-    const SECOND_BALANCE_END   = 59.08;
+    const SECOND_BALANCE_END   = 59.55;
     const MINUTE_JUMP_START    = 59.04;
 
     const MINUTE_JUMP_FRAMES = [
@@ -111,9 +111,9 @@ window.initSuisseClock = function (canvasId, sizePx) {
 
             const marker = Math.PI * 2 / 60;
             const t = (pos - SECOND_SWEEP_SECONDS) / (SECOND_BALANCE_END - SECOND_SWEEP_SECONDS);
-            const wobble = Math.sin(t * Math.PI * 5.7) * Math.exp(-t * 3.4);
-            const settle = (1 - this.smoothstep(t)) * 0.10;
-            return marker * (wobble * 0.18 + settle);
+            const wobble = Math.sin(t * Math.PI * 2.2) * Math.exp(-t * 1.9);
+            const settle = (1 - this.smoothstep(t)) * 0.07;
+            return marker * (wobble * 0.12 + settle);
         }
 
         drawShadow() {
@@ -283,7 +283,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
         }
     }
 
-    const clock = new Clock(canvas, ctx, SIZE * 0.44);
+    const clock = new Clock(canvas, ctx, SIZE * 0.475);
 
     let frameId = null;
 
