@@ -6,14 +6,14 @@
      - tige s'arrête au centre du disque (pas de pointe)
      - disque rouge = terminaison de l'aiguille
      - épaisseur gare (R×0.032), disque (R×0.090)
-     - glissement continu 58s, décélération + micro-overshoot
+     - balayage constant en 58.5s, petite balance à 12, attente du top minute
 
    PIVOT CENTRAL :
      - forme rectangulaire/capsule (pas un cercle)
      - rouge, couvre le croisement des aiguilles
 
    GRANDE AIGUILLE + HEURE :
-     - vibrent ensemble (axe commun) au bond
+     - bond avant, trois oscillations visibles, puis calage au trait
 ================================================================= */
 
 window.initSuisseClock = function (canvasId, sizePx) {
@@ -33,10 +33,20 @@ window.initSuisseClock = function (canvasId, sizePx) {
     const ctx = canvas.getContext('2d');
     ctx.scale(DPR, DPR);
 
-    const DECEL_START = 57.20;
-    const SWEEP_END   = 58.00;
-    const JUMP_START  = 58.60;
-    const JUMP_END    = 59.90;
+    const SECOND_SWEEP_SECONDS = 58.50;
+    const SECOND_BALANCE_END   = 59.08;
+    const MINUTE_JUMP_START    = 59.04;
+
+    const MINUTE_JUMP_FRAMES = [
+        { t: 59.04, offset: 0.000, shake:  0.00 },
+        { t: 59.28, offset: 1.135, shake:  1.00 },
+        { t: 59.42, offset: 0.938, shake: -0.82 },
+        { t: 59.55, offset: 1.070, shake:  0.58 },
+        { t: 59.67, offset: 0.985, shake: -0.38 },
+        { t: 59.79, offset: 1.026, shake:  0.24 },
+        { t: 59.90, offset: 0.996, shake: -0.12 },
+        { t: 59.99, offset: 1.000, shake:  0.00 }
+    ];
 
     class Clock {
 
@@ -51,28 +61,59 @@ window.initSuisseClock = function (canvasId, sizePx) {
             this.ctx.clearRect(0, 0, SIZE, SIZE);
             const now = new Date();
             const pos = now.getSeconds() + now.getMilliseconds() / 1000;
-            const { off: jumpOff } = this.jumpOffset(pos);
+            const impulse = this.minuteJumpImpulse(pos);
             this.drawShadow();
             this.drawFace();
             this.drawMarkers();
-            this.drawHourHand(now, jumpOff);
-            this.drawMinuteHand(now, pos);
+            this.drawHourHand(now, impulse);
+            this.drawMinuteHand(now, impulse);
             this.drawSecondHand(pos);
-           /* this.drawCenter(); */
+            /* this.drawCenter(); */
         }
 
-        jumpOffset(pos) {
-            if (pos >= JUMP_END)  return { off: 1.0,  phase: 'calé' };
-            if (pos < JUMP_START) return { off: 0.0,  phase: 'stable' };
-            const t = (pos - JUMP_START) / (JUMP_END - JUMP_START);
-            let off, phase;
-            if      (t < 0.10) { const p=t/0.10;        off=1.14*(1-Math.pow(1-p,4));               phase='BOND↑'; }
-            else if (t < 0.25) { const p=(t-0.10)/0.15; off=1.14+(0.90-1.14)*(1-Math.pow(1-p,3));  phase='recul↓'; }
-            else if (t < 0.42) { const p=(t-0.25)/0.17; off=0.90+(1.04-0.90)*(1-Math.pow(1-p,3));  phase='rebond↑'; }
-            else if (t < 0.58) { const p=(t-0.42)/0.16; off=1.04+(0.98-1.04)*(1-Math.pow(1-p,2));  phase='mini↓'; }
-            else if (t < 0.75) { const p=(t-0.58)/0.17; off=0.98+(1.005-0.98)*(1-Math.pow(1-p,2)); phase='micro↑'; }
-            else               { const p=(t-0.75)/0.25; off=1.005+(1.000-1.005)*(p*p*(3-2*p));     phase='calage'; }
-            return { off, phase };
+        easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        smoothstep(t) {
+            return t * t * (3 - 2 * t);
+        }
+
+        interpolateFrames(pos, frames) {
+            if (pos <= frames[0].t) return frames[0];
+
+            for (let i = 0; i < frames.length - 1; i++) {
+                const a = frames[i];
+                const b = frames[i + 1];
+                if (pos <= b.t) {
+                    const t = this.smoothstep((pos - a.t) / (b.t - a.t));
+                    return {
+                        offset: a.offset + (b.offset - a.offset) * t,
+                        shake:  a.shake  + (b.shake  - a.shake)  * t
+                    };
+                }
+            }
+
+            return frames[frames.length - 1];
+        }
+
+        minuteJumpImpulse(pos) {
+            if (pos < MINUTE_JUMP_START) return { offset: 0, shake: 0 };
+            return this.interpolateFrames(pos, MINUTE_JUMP_FRAMES);
+        }
+
+        secondBalanceAngle(pos) {
+            if (pos < SECOND_SWEEP_SECONDS) {
+                return (Math.PI * 2) * (pos / SECOND_SWEEP_SECONDS);
+            }
+
+            if (pos >= SECOND_BALANCE_END) return 0;
+
+            const marker = Math.PI * 2 / 60;
+            const t = (pos - SECOND_SWEEP_SECONDS) / (SECOND_BALANCE_END - SECOND_SWEEP_SECONDS);
+            const wobble = Math.sin(t * Math.PI * 5.7) * Math.exp(-t * 3.4);
+            const settle = (1 - this.smoothstep(t)) * 0.10;
+            return marker * (wobble * 0.18 + settle);
         }
 
         drawShadow() {
@@ -148,17 +189,17 @@ window.initSuisseClock = function (canvasId, sizePx) {
             this.ctx.restore();
         }
 
-        drawHourHand(now, jumpOff) {
-            const h = (now.getHours() % 12) + now.getMinutes() / 60 + now.getSeconds() / 3600;
+        drawHourHand(now, impulse) {
+            const h = (now.getHours() % 12) + (now.getMinutes() + impulse.offset) / 60;
             const base = (Math.PI * 2) * (h / 12);
-            const vib  = (Math.PI * 2 / 60) * jumpOff * (1 / 12);
-            this.drawTrapHand(base + vib, 0.50, 0.13, 0.12, 0.08, '#111');
+            const tremble = impulse.shake * (Math.PI * 2 / 60) * 0.018;
+            this.drawTrapHand(base + tremble, 0.50, 0.13, 0.12, 0.08, '#111');
         }
 
-        drawMinuteHand(now, pos) {
-            const { off } = this.jumpOffset(pos);
-            const disp = now.getMinutes() + off;
-            this.drawTrapHand((Math.PI * 2) * (disp / 60), 0.84, 0.14, 0.085, 0.050, '#111');
+        drawMinuteHand(now, impulse) {
+            const disp = now.getMinutes() + impulse.offset;
+            const tremble = impulse.shake * (Math.PI * 2 / 60) * 0.052;
+            this.drawTrapHand((Math.PI * 2) * (disp / 60) + tremble, 0.84, 0.14, 0.085, 0.050, '#111');
         }
 
         /* ── TROTTEUSE ──────────────────────────────────────────────
@@ -170,18 +211,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
             const r = this.radius;
             let angle;
 
-            if (pos < DECEL_START) {
-                angle = (Math.PI * 2) * (pos / 58.0);
-            } else if (pos < SWEEP_END) {
-                const t    = (pos - DECEL_START) / (SWEEP_END - DECEL_START);
-                const a0   = (Math.PI * 2) * (DECEL_START / 58.0);
-                const ease = 1 - Math.pow(1 - t, 3);
-                const base = a0 + (Math.PI * 2 - a0) * ease;
-                const amp  = (Math.PI * 2 / 60) * 0.04;
-                angle = base + amp * Math.exp(-t * 9) * Math.sin(t * Math.PI * 3);
-            } else {
-                angle = 0;
-            }
+            angle = this.secondBalanceAngle(pos);
 
             const diskDist = r * 0.66;
 
