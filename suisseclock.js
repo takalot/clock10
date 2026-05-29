@@ -116,38 +116,90 @@ window.initSuisseClock = function (canvasId, sizePx) {
             return marker * (wobble * 0.12 + settle);
         }
 
-        drawShadow() {
-            const { x: cx, y: cy } = this.center;
-            const r = this.radius;
-            this.ctx.save();
-            this.ctx.beginPath();
-            this.ctx.arc(cx, cy, r * 1.05, 0, Math.PI * 2);
-            this.ctx.shadowColor   = 'rgba(0,0,0,0.20)';
-            this.ctx.shadowBlur    = r * 0.12;
-            this.ctx.shadowOffsetY = r * 0.04;
-            this.ctx.fillStyle = '#000';
-            this.ctx.fill();
-            this.ctx.restore();
-        }
+		drawShadow() {
+			const { x: cx, y: cy } = this.center;
+			const r = this.radius;
 
-        drawFace() {
-            const { x: cx, y: cy } = this.center;
-            const r = this.radius;
-            this.ctx.beginPath();
-            this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#f8f5ef';
-            this.ctx.fill();
-            const radial = this.ctx.createRadialGradient(cx, cy - r * 0.15, r * 0.1, cx, cy, r);
-            radial.addColorStop(0, 'rgba(255,255,255,0.40)');
-            radial.addColorStop(1, 'rgba(0,0,0,0.02)');
-            this.ctx.fillStyle = radial;
-            this.ctx.fill();
-            this.ctx.beginPath();
-            this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            this.ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-            this.ctx.lineWidth = r * 0.008;
-            this.ctx.stroke();
-        }
+			this.ctx.save();
+
+			// ombre extérieure forte
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 1.075, 0, Math.PI * 2);
+			this.ctx.shadowColor = 'rgba(0,0,0,0.72)';
+			this.ctx.shadowBlur = r * 0.13;
+			this.ctx.shadowOffsetY = r * 0.045;
+			this.ctx.fillStyle = '#050505';
+			this.ctx.fill();
+
+			this.ctx.restore();
+		}
+
+		drawFace() {
+			const { x: cx, y: cy } = this.center;
+			const r = this.radius;
+
+			// anneau noir extérieur avec relief
+			const bezel = this.ctx.createRadialGradient(cx, cy - r * 0.22, r * 0.58, cx, cy, r * 1.09);
+			bezel.addColorStop(0.00, '#3a3427');
+			bezel.addColorStop(0.45, '#090909');
+			bezel.addColorStop(0.72, '#000000');
+			bezel.addColorStop(1.00, '#2a2418');
+
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 1.075, 0, Math.PI * 2);
+			this.ctx.fillStyle = bezel;
+			this.ctx.fill();
+
+			// cadran or / champagne
+			const face = this.ctx.createRadialGradient(cx - r * 0.18, cy - r * 0.22, r * 0.06, cx, cy, r);
+			face.addColorStop(0.00, '#fcfce6');
+			face.addColorStop(0.34, '#e7c96f');
+			face.addColorStop(0.72, '#fafaf7');
+			face.addColorStop(1.00, '#fafacd');
+
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 0.985, 0, Math.PI * 2);
+			this.ctx.fillStyle = face;
+			this.ctx.fill();
+			
+			// lumière blanche centrale / haut-gauche
+			const whiteLight = this.ctx.createRadialGradient(
+				cx - r * 0.22,
+				cy - r * 0.28,
+				0,
+				cx,
+				cy,
+				r * 0.95
+			);
+
+			whiteLight.addColorStop(0.00, 'rgba(255,255,255,0.72)');
+			whiteLight.addColorStop(0.22, 'rgba(255,255,255,0.34)');
+			whiteLight.addColorStop(0.52, 'rgba(255,255,255,0.10)');
+			whiteLight.addColorStop(1.00, 'rgba(255,255,255,0.00)');
+
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 0.955, 0, Math.PI * 2);
+			this.ctx.fillStyle = whiteLight;
+			this.ctx.fill();
+
+			// liseré intérieur sombre
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 0.988, 0, Math.PI * 2);
+			this.ctx.strokeStyle = 'rgba(0,0,0,0.72)';
+			this.ctx.lineWidth = r * 0.018;
+			this.ctx.stroke();
+
+			// highlight haut-gauche
+			const shine = this.ctx.createRadialGradient(cx - r * 0.30, cy - r * 0.38, 0, cx, cy, r);
+			shine.addColorStop(0.00, 'rgba(255,255,255,0.38)');
+			shine.addColorStop(0.38, 'rgba(255,255,255,0.08)');
+			shine.addColorStop(1.00, 'rgba(255,255,255,0)');
+
+			this.ctx.beginPath();
+			this.ctx.arc(cx, cy, r * 0.965, 0, Math.PI * 2);
+			this.ctx.fillStyle = shine;
+			this.ctx.fill();
+		}
 
         drawMarkers() {
             const { x: cx, y: cy } = this.center;
@@ -156,9 +208,9 @@ window.initSuisseClock = function (canvasId, sizePx) {
                 const angle     = (Math.PI * 2) * (i / 60);
                 const isHour    = i % 5  === 0;
                 const isQuarter = i % 15 === 0;
-                const outer = r * 0.92;
-                const inner = isQuarter ? r * 0.66 : isHour ? r * 0.74 : r * 0.85;
-                const width = isQuarter ? r * 0.055 : isHour ? r * 0.042 : r * 0.013;
+				const outer = r * 0.915;
+				const inner = isQuarter ? r * 0.61 : isHour ? r * 0.69 : r * 0.825;
+				const width = isQuarter ? r * 0.078 : isHour ? r * 0.060 : r * 0.020;
                 this.ctx.beginPath();
                 this.ctx.moveTo(cx + Math.sin(angle) * outer, cy - Math.cos(angle) * outer);
                 this.ctx.lineTo(cx + Math.sin(angle) * inner, cy - Math.cos(angle) * inner);
@@ -193,13 +245,13 @@ window.initSuisseClock = function (canvasId, sizePx) {
             const h = (now.getHours() % 12) + (now.getMinutes() + impulse.offset) / 60;
             const base = (Math.PI * 2) * (h / 12);
             const tremble = impulse.shake * (Math.PI * 2 / 60) * 0.018;
-            this.drawTrapHand(base + tremble, 0.50, 0.13, 0.12, 0.08, '#111');
+            this.drawTrapHand(base + tremble, 0.50, 0.14, 0.155, 0.105, '#050505');
         }
 
         drawMinuteHand(now, impulse) {
             const disp = now.getMinutes() + impulse.offset;
             const tremble = impulse.shake * (Math.PI * 2 / 60) * 0.052;
-            this.drawTrapHand((Math.PI * 2) * (disp / 60) + tremble, 0.84, 0.14, 0.085, 0.050, '#111');
+            this.drawTrapHand((Math.PI * 2) * (disp / 60) + tremble, 0.84, 0.15, 0.125, 0.075, '#050505');
         }
 
         /* ── TROTTEUSE ──────────────────────────────────────────────
@@ -225,7 +277,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
             this.ctx.shadowColor = 'rgba(0,0,0,0.20)';
             this.ctx.shadowBlur  = r * 0.020;
             this.ctx.strokeStyle = '#d71920';
-            this.ctx.lineWidth   = r * 0.032;
+            this.ctx.lineWidth = r * 0.040; /*Epaisseur de la trotteuse*/
             this.ctx.lineCap     = 'butt';
             this.ctx.beginPath();
             this.ctx.moveTo(stemX0, stemY0);
@@ -238,7 +290,7 @@ window.initSuisseClock = function (canvasId, sizePx) {
             this.ctx.shadowBlur  = 0;
             this.ctx.fillStyle   = '#d71920';
             this.ctx.beginPath();
-            this.ctx.arc(diskX, diskY, r * 0.090, 0, Math.PI * 2);
+            this.ctx.arc(diskX, diskY, r * 0.105, 0, Math.PI * 2); /*Epaisseur de la trotteuse*/
             this.ctx.fill();
             this.ctx.strokeStyle = 'rgba(0,0,0,0.10)';
             this.ctx.lineWidth   = r * 0.006;
