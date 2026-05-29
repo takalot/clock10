@@ -152,8 +152,8 @@ window.initSuisseClock = function (canvasId, sizePx) {
 
 			// cadran or / champagne
 			const face = this.ctx.createRadialGradient(cx - r * 0.18, cy - r * 0.22, r * 0.06, cx, cy, r);
-			face.addColorStop(0.00, '#fcfce6');
-			face.addColorStop(0.34, '#e7c96f');
+			face.addColorStop(0.00, '#ffffff');
+			face.addColorStop(0.34, '#f5f5e6');
 			face.addColorStop(0.72, '#fafaf7');
 			face.addColorStop(1.00, '#fafacd');
 
